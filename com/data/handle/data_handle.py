@@ -82,26 +82,52 @@ class handle(object):
             time.sleep(1)
         # 获取cookie
         url_three_cookie = driver_three.get_cookies()
-        for url in goods_data_key_map:
-            # 每个url 三个关键文本
-            for url_data in goods_data_key_map[key]:
-                # 下载excel
-                path = os.getcwd()[:-4] + str(time.time())
-                self.download_excel(url, path, ';'.join([item['name'] + '=' + item['value'] for item in url_three_cookie]), url_data, country)
+        self.download_excel_async(goods_data_key_map, url_three_cookie, country)
         # 关闭第三个网页
         driver_three.close()
 
-    # 下载最终excel
-    def download_excel(self, goods_url, path, cookie, keys, country):
-        url = 'https://www.sellersprite.com/v2/keyword/list-export-dynamic'
+    # 下载最终excel 异步执行
+    def download_excel_async(self, goods_data_key_map, url_three_cookie, country):
+        path = os.getcwd()[:-4] + str(time.time())
+        # 创建文件夹
         folder = os.path.exists(path)
-        if not folder:  # 判断是否存在文件夹如果不存在则创建为文件夹
+        if not folder:
             os.makedirs(path)
+        print('共' + str(len(goods_data_key_map)) + '个url')
+        thread_list = []
+        index = 0
+        for url in goods_data_key_map:
+            # 创建文件具体目录
+            file_path = path + '/' + url.replace('/', '_') + '/'
+            folder = os.path.exists(file_path)
+            if not folder:
+                os.makedirs(file_path)
+            # 每个url 三个关键文本
+            data_index = 0
+            for url_data in goods_data_key_map[url]:
+                # 下载excel
+                thread_name = '正在下载第' + str(index) + '个url 第' + str(data_index) + '个关键文本'
+                excel_thread = amazon_excel_thread(thread_name, file_path, ';'.join([item['name'] + '=' + item['value'] for item in url_three_cookie]), url_data, country, self)
+                excel_thread.start()
+                thread_list.append(excel_thread)
+                time.sleep(0.5)
+                data_index += 1
+            # 控制并发度 1个线程同时执行
+            if len(thread_list) >= 1:
+                while thread_list:
+                    thread_list.pop().join()
+            index += 1
+        while thread_list:
+            thread_list.pop().join()
+
+    # 下载最终excel
+    def download_excel(self, file_path, cookie, keys, country):
+        url = 'https://www.sellersprite.com/v2/keyword/list-export-dynamic'
         # 下载
         for key_list in keys:
             for key in key_list:
-                # 处理空格
-                key = key.replace(' ', '+')
+                # 过滤不需要的关键字 todo
+
                 # 构造请求参数
                 headers = {
                     'cookie': cookie
@@ -113,10 +139,8 @@ class handle(object):
                     'usestatic':'M',
                     'limitUserStatic': 'true',
                     'adminDes': 'N',
-                    'keywords': key
+                    'keywords': key.replace(' ', '+')
                 }
-                file_path = path + '/' + goods_url.replace('/', '_') + '/'
-                os.makedirs(path)
                 down_res = requests.get(url=url, headers=headers, params=params)
                 with open(file_path + key + '.xlsx', 'wb') as file:
                     file.write(down_res.content)
@@ -146,12 +170,14 @@ class handle(object):
         print(js)
         driver.execute_script(js)
         textarea_element.click()
-        # textarea_element.send_keys(find_str)
         # 切换关键字个数
         click_element = driver.find_element_by_xpath('//*[@id="ui-id-' + str(num) + '"]')
         click_element.click()
         # 获取结果
-        table_element = driver.find_element_by_xpath('//*[@id="keyword_density-tab-' + str(num) + '-table"]/tbody')
+        try:
+            table_element = driver.find_element_by_xpath('//*[@id="keyword_density-tab-' + str(num) + '-table"]/tbody')
+        except:
+            return data
         if table_element is not None:
             tr_elements = table_element.find_elements_by_tag_name('tr')
             for tr in tr_elements:
@@ -280,6 +306,20 @@ class amazon_goods_thread(threading.Thread):
     def run(self):
         print ("开始线程: " + self.thread_name)
         self.thread_object.get_amazon_good_info(self.url)
+        print ("结束线程: " + self.thread_name)
+
+class amazon_excel_thread(threading.Thread):
+    def __init__(self, thread_name, file_path, cookie, keys, country, thread_object):
+        threading.Thread.__init__(self)
+        self.thread_name = thread_name
+        self.file_path = file_path
+        self.cookie = cookie
+        self.keys = keys
+        self.country = country
+        self.thread_object = thread_object
+    def run(self):
+        print ("开始线程: " + self.thread_name)
+        self.thread_object.download_excel(self.file_path, self.cookie, self.keys, self.country)
         print ("结束线程: " + self.thread_name)
 
 s = handle()
