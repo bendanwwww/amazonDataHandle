@@ -7,7 +7,6 @@ import requests
 from lxml import etree
 import threading
 import os
-import json
 
 class handle(object):
     name = 'amazon'
@@ -94,7 +93,7 @@ class handle(object):
         if not folder:
             os.makedirs(path)
         print('共' + str(len(goods_data_key_map)) + '个url')
-        thread_list = []
+        # thread_list = []
         index = 0
         for url in goods_data_key_map:
             # 创建文件具体目录
@@ -108,17 +107,18 @@ class handle(object):
                 # 下载excel
                 thread_name = '正在下载第' + str(index) + '个url 第' + str(data_index) + '个关键文本'
                 excel_thread = amazon_excel_thread(thread_name, file_path, ';'.join([item['name'] + '=' + item['value'] for item in url_three_cookie]), url_data, country, self)
-                excel_thread.start()
-                thread_list.append(excel_thread)
-                time.sleep(0.5)
+                # excel_thread.start()
+                excel_thread.run()
+                # thread_list.append(excel_thread)
+                time.sleep(1)
                 data_index += 1
-            # 控制并发度 1个线程同时执行
-            if len(thread_list) >= 1:
-                while thread_list:
-                    thread_list.pop().join()
+        #     # 控制并发度 1个线程同时执行
+        #     if len(thread_list) >= 1:
+        #         while thread_list:
+        #             thread_list.pop().join()
             index += 1
-        while thread_list:
-            thread_list.pop().join()
+        # while thread_list:
+        #     thread_list.pop().join()
 
     # 下载最终excel
     def download_excel(self, file_path, cookie, keys, country):
@@ -126,8 +126,6 @@ class handle(object):
         # 下载
         for key_list in keys:
             for key in key_list:
-                # 过滤不需要的关键字 todo
-
                 # 构造请求参数
                 headers = {
                     'cookie': cookie
@@ -184,8 +182,13 @@ class handle(object):
                 td_elements = tr.find_elements_by_tag_name('td')
                 if len(td_elements) == 2:
                     td_text = td_elements[0].text
+                    td_number = 1
+                    if td_elements[1].text is not None:
+                        td_number = int(td_elements[1].text.split(' (')[0])
                     if td_text is not None and len(td_text.split('. ')) == 2:
-                        data.append(td_text.split('. ')[1])
+                        # 判断td_number是否大于1
+                        if int(td_number) > 1:
+                            data.append(td_text.split('. ')[1])
         return data
 
     # 检查第一个页面登陆
