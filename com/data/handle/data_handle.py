@@ -10,7 +10,7 @@ import os
 
 class handle(object):
     name = 'amazon'
-    driver_path = '/Users/lsy/Downloads/chromedriver';
+    driver_path = os.getcwd() + '/chromedriver'
     url_one = 'https://xp.sellermotor.com/selection/index/market-insight'
     url_two = 'https://www.amz123.com/tools-wordcounter'
     url_three = 'https://www.sellersprite.com/v2/keyword-miner/dynamic'
@@ -87,7 +87,7 @@ class handle(object):
 
     # 下载最终excel 异步执行
     def download_excel_async(self, goods_data_key_map, url_three_cookie, country):
-        path = os.getcwd()[:-4] + str(time.time())
+        path = os.getcwd() + str(time.time())
         # 创建文件夹
         folder = os.path.exists(path)
         if not folder:
