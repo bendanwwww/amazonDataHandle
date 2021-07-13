@@ -10,7 +10,8 @@ import os
 
 class handle(object):
     name = 'amazon'
-    driver_path = os.getcwd() + '/chromedriver'
+    code_path = os.path.abspath(os.path.dirname(__file__))
+    driver_path = code_path + '/chromedriver.exe'
     url_one = 'https://xp.sellermotor.com/selection/index/market-insight'
     url_two = 'https://www.amz123.com/tools-wordcounter'
     url_three = 'https://www.sellersprite.com/v2/keyword-miner/dynamic'
@@ -37,7 +38,7 @@ class handle(object):
         input_element.send_keys(Keys.ENTER)
         # 循环n次取出url
         url_list = []
-        cycle_num = 1
+        cycle_num = 10
         for i in range(cycle_num):
             table_element = self.get_element_retry(driver_one, "top100-list")
             tbody_element = self.get_element_by_tag_name_retry(table_element, "tbody")
@@ -87,7 +88,7 @@ class handle(object):
 
     # 下载最终excel 异步执行
     def download_excel_async(self, goods_data_key_map, url_three_cookie, country):
-        path = os.getcwd() + str(time.time())
+        path = self.code_path + str(time.time())
         # 创建文件夹
         folder = os.path.exists(path)
         if not folder:
@@ -97,7 +98,7 @@ class handle(object):
         index = 0
         for url in goods_data_key_map:
             # 创建文件具体目录
-            file_path = path + '/' + url.replace('/', '_') + '/'
+            file_path = path + '/' + url.replace('/', '_').replace(':', '') + '/'
             folder = os.path.exists(file_path)
             if not folder:
                 os.makedirs(file_path)
@@ -140,8 +141,11 @@ class handle(object):
                     'keywords': key.replace(' ', '+')
                 }
                 down_res = requests.get(url=url, headers=headers, params=params)
-                with open(file_path + key + '.xlsx', 'wb') as file:
-                    file.write(down_res.content)
+                try:
+                    with open(file_path + key + '.xlsx', 'wb') as file:
+                        file.write(down_res.content)
+                except:
+                    print(key + " 此数据下载失败")
 
     # 查询关键词
     def getKeyWord(self, driver, str):
