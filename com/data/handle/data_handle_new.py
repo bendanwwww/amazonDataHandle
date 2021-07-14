@@ -12,7 +12,7 @@ import csv
 class handle(object):
     name = 'amazon'
     code_path = os.path.abspath(os.path.dirname(__file__))
-    driver_path = code_path + '/chromedriver_bak'
+    driver_path = code_path + '/chromedriver.exe'
     url_one = 'https://xp.sellermotor.com/selection/index/market-insight'
 
     url_three = 'https://www.sellersprite.com/v2/keyword-miner/dynamic'
@@ -561,14 +561,8 @@ key = 'armchairs'
 # 国家
 country = 0
 s = handle()
-# s.getAmazonInfo(key, country)
-# s.getAmazonKeyWord()
-# s.export_csv(key)
-td_str = 'armchair 39'
-for w in s.number_list:
-    if w in td_str:
-        continue
-for w in s.symbol_list:
-    if w in td_str:
-        continue
+s.getAmazonInfo(key, country)
+s.getAmazonKeyWord()
+s.export_csv(key)
+
 # s.get_amazon_good_info('https://www.amazon.com/Artechworks-Modern-Armchair-Bedroom-Channel/dp/B082KNVZYB/ref=sxin_11_pa_sp_search_thematic_sspa?cv_ct_cx=armchairs&dchild=1&keywords=armchairs&pd_rd_i=B082KNVZYB&pd_rd_r=2a059f92-b4da-4b41-901f-8be8e401ff20&pd_rd_w=rbxuw&pd_rd_wg=nsBZD&pf_rd_p=beb60826-022b-4649-9443-7feace17b79e&pf_rd_r=13BMZ6MZM4M8J344Z6J0&qid=1626281170&refresh=1&sr=1-1-a73d1c8c-2fd2-4f19-aa41-2df022bcb241-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExS1VZQjRSVTVFNDFBJmVuY3J5cHRlZElkPUEwOTk2NjkwMkJQMTQ0UEZGVjNZViZlbmNyeXB0ZWRBZElkPUEwNjEyMTE3NVY4VktMUkMxRVo3JndpZGdldE5hbWU9c3Bfc2VhcmNoX3RoZW1hdGljJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==')
