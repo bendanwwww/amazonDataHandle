@@ -367,13 +367,17 @@ class handle(object):
                         # 判断是否为数字或单个字母或介词
                         td_str = td_text.split('. ')[1]
                         if not td_str.isdigit() and len(td_str) > 1 and td_str not in self.preposition_list:
+                            need_add = True
                             for w in self.number_list:
                                 if w in td_str:
-                                    continue
+                                    need_add = False
+                                    break
                             for w in self.symbol_list:
                                 if w in td_str:
-                                    continue
-                            data.append(td_str)
+                                    need_add = False
+                                    break
+                            if need_add:
+                                data.append(td_str)
         return data
 
     # 检查第一个页面登陆
@@ -557,7 +561,14 @@ key = 'armchairs'
 # 国家
 country = 0
 s = handle()
-s.getAmazonInfo(key, country)
-s.getAmazonKeyWord()
-s.export_csv(key)
+# s.getAmazonInfo(key, country)
+# s.getAmazonKeyWord()
+# s.export_csv(key)
+td_str = 'armchair 39'
+for w in s.number_list:
+    if w in td_str:
+        continue
+for w in s.symbol_list:
+    if w in td_str:
+        continue
 # s.get_amazon_good_info('https://www.amazon.com/Artechworks-Modern-Armchair-Bedroom-Channel/dp/B082KNVZYB/ref=sxin_11_pa_sp_search_thematic_sspa?cv_ct_cx=armchairs&dchild=1&keywords=armchairs&pd_rd_i=B082KNVZYB&pd_rd_r=2a059f92-b4da-4b41-901f-8be8e401ff20&pd_rd_w=rbxuw&pd_rd_wg=nsBZD&pf_rd_p=beb60826-022b-4649-9443-7feace17b79e&pf_rd_r=13BMZ6MZM4M8J344Z6J0&qid=1626281170&refresh=1&sr=1-1-a73d1c8c-2fd2-4f19-aa41-2df022bcb241-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExS1VZQjRSVTVFNDFBJmVuY3J5cHRlZElkPUEwOTk2NjkwMkJQMTQ0UEZGVjNZViZlbmNyeXB0ZWRBZElkPUEwNjEyMTE3NVY4VktMUkMxRVo3JndpZGdldE5hbWU9c3Bfc2VhcmNoX3RoZW1hdGljJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==')
