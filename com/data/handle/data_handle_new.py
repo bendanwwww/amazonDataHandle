@@ -27,6 +27,19 @@ class handle(object):
     country_post_code_dict = {0: '10010', 1: '10115', 2: '75000', 3: '66030', 4: '04810'}
     country_url_dict = {0: '.com', 1: '.de', 2: '.fr', 3: '.es', 4: '.it'}
 
+    # 介表表
+    preposition_list = ['at', 'in', 'on', 'to', 'above', 'over', 'below', 'under', 'beside', 'behind', 'between',
+                        'in', 'on', 'at', 'after', 'from', 'since for', 'behind', 'across', 'through', 'past', 'to',
+                        'towards', 'onto', 'into', 'up', 'down', 'at', 'under', 'on', 'about', 'by', 'with', 'in', 'according to',
+                        'irrespective of', 'ahead of', 'owing to', 'but for', 'together with', 'prior to', 'as forsave for', 'what with',
+                        'in line with', 'in place of', 'for lack of', 'in return for', 'by way of', 'on account of', 'by force of', 'with respect to',
+                        'for the purpose of', 'at the mercy of', 'for the sake of', 'in the care of', 'in the teeth of', 'on the eve of', 'on the ground of',
+                        'on the part of', 'to the exclusion of', 'with an eye to', 'under the auspices of', 'under the guise of']
+    # 数字表
+    number_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    # 符号表
+    symbol_list = ['&', '+', '-', '#', '%', '@', '!', '*', '(', ')']
+
     # 亚马逊商品信息
     goods_data_map = {}
     # 需要查询的类目链接
@@ -54,7 +67,9 @@ class handle(object):
         post_code_button_element = self.get_element_by_xpath_retry(driver, '//*[@id="GLUXZipUpdate"]/span/input')
         post_code_button_element.click()
         # 关闭可能出现的弹框
+        self.click_element_by_xpath_retry(driver, '//*[@id="nav-main"]/div[1]/div/div/div[3]/span[2]/span', 5)
         self.click_element_by_xpath_retry(driver, '//*[@id="a-popover-4"]/div/div[2]/span/span', 5)
+        time.sleep(5)
         # 获取top100商品
         goods_url_list = []
         goods_elements = self.get_elements_by_tag_class_retry(driver, 's-no-outline')
@@ -65,16 +80,17 @@ class handle(object):
                     break
             # 如果商品不足100个 则点击下一页
             if len(goods_url_list) < 100:
-                self.click_element_by_xpath_retry(driver, '//*[@id="search"]/div[1]/div/div[1]/div/span[3]/div[2]/div[67]/span/div/div/ul/li[7]', 5)
+                driver.execute_script('window.location.href="' + amazon_search_url + '?page=2"')
+                # self.click_element_by_xpath_retry(driver, '//*[@id="search"]/div[1]/div/div[1]/div/span[3]/div[2]/div[65]/span/div/div/ul/li[7]', 5)
                 goods_elements = self.get_elements_by_tag_class_retry(driver, 's-no-outline')
         # 关闭页面
         driver.close()
         # 爬取商品信息
         self.get_amazon_good_info_async(goods_url_list)
         # 根据类目获取各个类目下的top100商品
-        # category_goods_url_list = self.get_goods_url_by_category()
+        category_goods_url_list = self.get_goods_url_by_category()
         # 爬取商品信息
-        # self.get_amazon_good_info_async(category_goods_url_list)
+        self.get_amazon_good_info_async(category_goods_url_list)
 
 
     # 根据商品标题获取关键字
@@ -88,7 +104,7 @@ class handle(object):
             print('共' + str(len(self.goods_data_map)) + '个关键词列表 正在查询第' + str(index) + '个')
             goods_data = self.goods_data_map[url]
             title = goods_data[0]
-            self.goods_data_key_map[url] = [self.getKeyWord(driver, title)]
+            self.goods_data_key_map[url] = self.getKeyWord(driver, title)
             index += 1
         # 关闭网页
         driver.close()
@@ -101,7 +117,7 @@ class handle(object):
         if not folder:
             os.makedirs(path)
         # 写入csv文件
-        with open(path + '/' + key + '.csv', 'w', encoding='utf-8') as csvfile:
+        with open(path + '/' + key + '.csv', 'w', encoding='utf_8_sig') as csvfile:
             writer = csv.writer(csvfile)
             # 先写入columns_name
             writer.writerow(['商品标题', '链接', '描述', '五点', '关键字列表(1个单词)', '关键字列表(2个单词)', '关键字列表(3个单词)'])
@@ -110,8 +126,18 @@ class handle(object):
                 key_word_list = []
                 if url in self.goods_data_key_map:
                     key_word_list = self.goods_data_key_map[url]
-                writer.writerow([self.goods_data_map[url][0], url, self.goods_data_map[url][1], self.goods_data_map[url][2],
-                                  ','.join('%s' %id for id in key_word_list[0]), ','.join('%s' %id for id in key_word_list[1]), ','.join('%s' %id for id in key_word_list[2])])
+                if len(key_word_list) < 3:
+                    continue
+                key_word_one = ''
+                key_word_two = ''
+                key_word_three = ''
+                if len(key_word_list[0]) > 0:
+                    key_word_one = ','.join('%s' %id for id in key_word_list[0])
+                if len(key_word_list[1]) > 0:
+                    key_word_two = ','.join('%s' %id for id in key_word_list[1])
+                if len(key_word_list[2]) > 0:
+                    key_word_three = ','.join('%s' %id for id in key_word_list[2])
+                writer.writerow([self.goods_data_map[url][0], url, self.goods_data_map[url][1], self.goods_data_map[url][2], key_word_one, key_word_two, key_word_three])
 
 
     def run(self, key, country):
@@ -337,13 +363,17 @@ class handle(object):
                 td_elements = tr.find_elements_by_tag_name('td')
                 if len(td_elements) == 2:
                     td_text = td_elements[0].text
-                    td_number = 1
-                    if td_elements[1].text is not None:
-                        td_number = int(td_elements[1].text.split(' (')[0])
                     if td_text is not None and len(td_text.split('. ')) == 2:
-                        # 判断td_number是否大于1
-                        if int(td_number) > 1:
-                            data.append(td_text.split('. ')[1])
+                        # 判断是否为数字或单个字母或介词
+                        td_str = td_text.split('. ')[1]
+                        if not td_str.isdigit() and len(td_str) > 1 and td_str not in self.preposition_list:
+                            for w in self.number_list:
+                                if w in td_str:
+                                    continue
+                            for w in self.symbol_list:
+                                if w in td_str:
+                                    continue
+                            data.append(td_str)
         return data
 
     # 检查第一个页面登陆
@@ -456,20 +486,23 @@ class handle(object):
             'sec-fetch-user': '?1',
             'sec-fetch-dest': 'document',
             'accept-language': 'zh-CN,zh;q=0.9',
-            'cookie': 'session-id=141-0198602-5971905; session-id-time=2082787201l; skin=noskin; ubid-main=135-4979259-9456307; sp-cdn="L5Z9:CN"; session-token=qJu4niG0cdup6NL0TC+J/w8lDwU0DO1YzQaCj6ZnrvACo+CBp3+/SfhygoXjs67xuJkAAxPKGHR0DnHN1UdAuN6DvIS9JYf4xDwHmEHcdFPZxHHxVIGcG7BKVB3CLm+SOyb7pInWI8g0MO1GVyJCyWffaZQNOJE3rAWJ2LL9DP6dj7iIX2LXjhvhyPcn4Fi6; lc-main=en_US; i18n-prefs=USD'
+            'cookie': 'session-id=141-0198602-5971905; session-id-time=2082787201l; skin=noskin; ubid-main=135-4979259-9456307; sp-cdn="L5Z9:CN"; lc-main=en_US; i18n-prefs=USD; session-token=jwQ39wgtD8+pFOiehcmq4DZc8cckkRHiQPZp76dQmJyB7qggSWJODV46bKFCHXCnNUjrt+Yaao1O6uWe7mc8YzQk38Z8yDECXcQboF8tePz5p6Ivqm1+KHTJ/Dd7+QrKfMwcpbUyvPoz0jXj4p+rMbkKrLZ9LcJNQEoNn+NTwMDcVMLhyATOB4o9Jg1kyFDB; csm-hit=tb:3ZHMDRYE1632HWSHMN14+s-WKMTPH1XQXHAS4GDDF1A|1626285148309&t:1626285148312&adb:adblk_no'
         }
+        url += '&language=en_US'
         resp = requests.get(url, headers=headers)
         html = etree.HTML(resp.text)
         # 获取标题
         title_data = ''
-        title_data_html = html.xpath('//*[@id="productTitle"]')
+        title_data_html = html.xpath('//*[@class="a-size-large product-title-word-break"]')
         if len(title_data_html) > 0 and title_data_html[0] is not None and title_data_html[0].text is not None:
             title_data = title_data_html[0].text.replace('\n', '')
         # 获取描述
         detail_data = ''
         detail_data_html = html.xpath('//*[@id="productDescription"]/p')
-        if len(detail_data_html) > 0 and detail_data_html[0] is not None and detail_data_html[0].text is not None:
-            detail_data = detail_data_html[0].text.replace('\n', '')
+        if len(detail_data_html) > 0:
+            for detail in detail_data_html:
+                if detail.text is not None:
+                    detail_data += detail.text.replace('\n', '')
         # 获取五点
         five_detail_data = []
         i = 3
@@ -527,4 +560,4 @@ s = handle()
 s.getAmazonInfo(key, country)
 s.getAmazonKeyWord()
 s.export_csv(key)
-# s.get_amazon_good_info('https://www.amazon.com/Furmax-Assembled-Century-Plastic-Kitchen/dp/B075DCHX5G/ref=sr_1_5?dchild=1&keywords=chairs&qid=1626267682&sr=8-5&th=1')
+# s.get_amazon_good_info('https://www.amazon.com/Artechworks-Modern-Armchair-Bedroom-Channel/dp/B082KNVZYB/ref=sxin_11_pa_sp_search_thematic_sspa?cv_ct_cx=armchairs&dchild=1&keywords=armchairs&pd_rd_i=B082KNVZYB&pd_rd_r=2a059f92-b4da-4b41-901f-8be8e401ff20&pd_rd_w=rbxuw&pd_rd_wg=nsBZD&pf_rd_p=beb60826-022b-4649-9443-7feace17b79e&pf_rd_r=13BMZ6MZM4M8J344Z6J0&qid=1626281170&refresh=1&sr=1-1-a73d1c8c-2fd2-4f19-aa41-2df022bcb241-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExS1VZQjRSVTVFNDFBJmVuY3J5cHRlZElkPUEwOTk2NjkwMkJQMTQ0UEZGVjNZViZlbmNyeXB0ZWRBZElkPUEwNjEyMTE3NVY4VktMUkMxRVo3JndpZGdldE5hbWU9c3Bfc2VhcmNoX3RoZW1hdGljJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==')
