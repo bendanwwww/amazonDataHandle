@@ -619,7 +619,7 @@ class handle(object):
         }
         url += '&language=en_US'
         try:
-            resp = requests.get(url, headers=headers)
+            resp = requests.get(url, headers=headers, timeout=10)
         except:
             return []
         html = etree.HTML(resp.text)
@@ -635,7 +635,7 @@ class handle(object):
                 # 重试
                 headers['cookie'] = random.choice(self.cookie_list)
                 try:
-                    resp = requests.get(url, headers=headers)
+                    resp = requests.get(url, headers=headers, timeout=10)
                 except:
                     return []
                 html = etree.HTML(resp.text)
