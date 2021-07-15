@@ -17,8 +17,8 @@ class handle(object):
 
     url_three = 'https://www.sellersprite.com/v2/keyword-miner/dynamic'
 
-    amazon_url = 'https://www.amazon{0}?language=es_US'
-    amazon_search_url = 'https://www.amazon.com/s?k={0}&language=en_US'
+    amazon_url = 'https://www.amazon{0}'
+    amazon_search_url = 'https://www.amazon{0}/s?k={1}&language=en_US'
     amazon_participle_url = 'https://www.amz123.com/tools-wordcounter'
 
     url_three_country_dict = {0: 'US', 1: 'JP', 2: 'UK', 3: 'DE', 4: 'FR', 5: 'IT', 6: 'ES', 7: 'CA'}
@@ -72,7 +72,7 @@ class handle(object):
     # 爬取亚马逊信息
     def get_amazon_info(self, key, country):
         # 亚马逊地址
-        amazon_search_url = self.amazon_search_url.format(key)
+        amazon_search_url = self.amazon_search_url.format(self.country_url_dict[country], key)
         # 国家邮编
         country_post_code = self.country_post_code_dict[country]
         # 打开亚马逊页面
@@ -113,7 +113,7 @@ class handle(object):
         # 关闭页面
         driver.close()
         # 爬取商品信息
-        self.get_amazon_good_info_async(goods_url_set)
+        self.get_amazon_good_info_async(country, goods_url_set)
         # tmp = set()
         # tmp.add('https://www.amazon.com/Profile-Record-Stabilizer-Turntable-Clamps-Fits/dp/B07PX1Y8MH/ref=sr_1_4?dchild=1&keywords=record+weight&qid=1626356621&refresh=1&sr=8-4&language=en_US')
         # self.get_amazon_good_info_async(tmp)
@@ -123,7 +123,7 @@ class handle(object):
         index = 0
         for category_url in category_goods_url_map:
             print('共' + str(len(category_goods_url_map)) + '个商品类目 正在查询第' + str(index) + '个')
-            goods_data_map = self.get_amazon_good_info_async(category_goods_url_map[category_url])
+            goods_data_map = self.get_amazon_good_info_async(country, category_goods_url_map[category_url])
             self.category_goods_data_map[category_url] = goods_data_map
             index += 1
 
@@ -286,6 +286,8 @@ class handle(object):
             except:
                 print("页面未加载完成 等待")
                 time.sleep(0.1)
+            if (i + 1) % 100 == 0:
+                driver.refresh()
 
     # 根据xpath不断尝试获取元素 阻塞
     def get_element_by_xpath_retry(self, driver, xpath):
@@ -296,6 +298,8 @@ class handle(object):
             except:
                 print('页面未加载完成 等待')
                 time.sleep(0.1)
+            if (i + 1) % 100 == 0:
+                driver.refresh()
 
     # 根据xpath不断尝试获取元素 阻塞
     def get_elements_by_xpath_retry(self, driver, xpath):
@@ -306,6 +310,8 @@ class handle(object):
             except:
                 print('页面未加载完成 等待')
                 time.sleep(0.1)
+            if (i + 1) % 100 == 0:
+                driver.refresh()
 
     # 根据xpath判断元素是否存在 重试
     def element_exist_by_xpath_retry(self, driver, xpath, retry_num):
@@ -510,7 +516,7 @@ class handle(object):
                         break
                 # 如果商品不足100个 则点击下一页
                 if len(category_goods_url_set) < 100:
-                    self.click_element_by_xpath_retry(driver, '//*[@id="zg-center-div"]/div[2]/div/ul/li[4]', 5)
+                    self.click_element_by_xpath_retry(driver, '//*[@id="zg-center-div"]/div[2]/div/ul/li[4]', 3)
                     goods_elements = self.get_elements_by_tag_class_retry(driver, 'a-text-normal')
             category_goods_url_map[category_url] = category_goods_url_set
             index += 1
@@ -519,7 +525,7 @@ class handle(object):
         return category_goods_url_map
 
     # 获取亚马逊商品信息 异步执行
-    def get_amazon_good_info_async(self, urls):
+    def get_amazon_good_info_async(self, country, urls):
         # 商品信息
         goods_data_map = {}
         thread_map = {}
@@ -527,7 +533,7 @@ class handle(object):
         fail_url_list = []
         index = 0
         for url in urls:
-            a_thread = amazon_goods_thread('共' + str(len(urls)) + '个页面 正在解析第' + str(index) + '个页面', url, self)
+            a_thread = amazon_goods_thread('共' + str(len(urls)) + '个页面 正在解析第' + str(index) + '个页面', country, url, self)
             a_thread.start()
             thread_map[url] = a_thread
             thread_key_list.append(url)
@@ -588,7 +594,7 @@ class handle(object):
         return goods_data_map
 
     # 获取亚马逊商品信息
-    def get_amazon_good_info(self, url):
+    def get_amazon_good_info(self, country, url):
         cookie = ''
         if len(self.cookie_list) == 0:
             cookie = self.def_cookie
@@ -667,7 +673,7 @@ class handle(object):
             category_url_html = html.xpath('//*[@class="a-color-secondary a-size-base prodDetSectionEntry"]/../td/span/span[' + str(url_span_index) + ']/a/@href')
         category_url_html = html.xpath('//*[@class="a-color-secondary a-size-base prodDetSectionEntry"]/../td/span/span[' + str(url_span_index - 1) + ']/a/@href')
         if len(category_url_html) > 0 and category_url_html[0] is not None:
-            category_url = 'https://www.amazon.com' + category_url_html[0] + '?language=en_US'
+            category_url = self.amazon_url.format(self.country_url_dict[country]) + category_url_html[0] + '?language=en_US'
             # 去除中文
             category_url = category_url.replace('-/zh/', '')
             self.goods_category_url_set.add(category_url)
@@ -687,7 +693,7 @@ class handle(object):
         five_detail_data = []
         i = 3
         five_detail_data_xpath = '//*[@id="feature-bullets"]/ul/li[2]/span'
-        while self.element_exist_by_xpath_retry(driver, five_detail_data_xpath, 20):
+        while self.element_exist_by_xpath_retry(driver, five_detail_data_xpath, 10):
             five_detail_data_element = self.get_element_by_xpath_retry(driver, five_detail_data_xpath)
             five_detail_data.append(five_detail_data_element.text.replace('\n', ''))
             five_detail_data_xpath = '//*[@id="feature-bullets"]/ul/li[' + str(i) + ']/span'
@@ -720,14 +726,15 @@ class handle(object):
 
 # 亚马逊获取商品信息线程
 class amazon_goods_thread(threading.Thread):
-    def __init__(self, thread_name, url, thread_object):
+    def __init__(self, thread_name, country, url, thread_object):
         threading.Thread.__init__(self)
         self.thread_name = thread_name
+        self.country = country
         self.url = url
         self.thread_object = thread_object
     def run(self):
         print ("开始线程: " + self.thread_name)
-        self.result = self.thread_object.get_amazon_good_info(self.url)
+        self.result = self.thread_object.get_amazon_good_info(self.country, self.url)
         print ("结束线程: " + self.thread_name)
     def get_result(self):
         try:
@@ -774,7 +781,7 @@ package_name = 'record weight'
 # 关键字
 key = 'record weight'
 # 国家
-country = 0
+country = 1
 s = handle(package_name)
 s.get_amazon_info(key, country)
 s.get_amazon_key_word()
