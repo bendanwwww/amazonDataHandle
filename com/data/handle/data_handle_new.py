@@ -1,7 +1,6 @@
 # 亚马逊数据处理工具
 
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 import time
 import requests
 from lxml import etree
@@ -13,7 +12,7 @@ import random
 class handle(object):
     name = 'amazon'
     code_path = os.path.abspath(os.path.dirname(__file__))
-    driver_path = code_path + '/chromedriver.exe'
+    driver_path = code_path + '/chromedriver_bak'
     url_one = 'https://xp.sellermotor.com/selection/index/market-insight'
 
     url_three = 'https://www.sellersprite.com/v2/keyword-miner/dynamic'
@@ -29,10 +28,10 @@ class handle(object):
     country_url_dict = {0: '.com', 1: '.de', 2: '.fr', 3: '.es', 4: '.it'}
 
     # 尽量绕过amazon反爬
-    cookie_list = ['session-id=141-0198602-5971905; session-id-time=2082787201l; skin=noskin; ubid-main=135-4979259-9456307; x-amz-captcha-1=1626333555817073; x-amz-captcha-2=Fh7ePzl89HNO2y/4YweOKg==; session-token=SHYIjafRjej7PZ0GTg1dQM8dpy3IFEKy557HttuHVB+xzjr++MlJRqZb4GuiRdafbt2+yRNEeYA7Ws9khV8jIRNo3bKw5JB9VuPyWhko/XtoVHk8J9Jdk66N364R1LgnwxrQxe9jqzXfRqRVqFsG2BuZzELbRkbfpe4a/FkKSEcocr+4MaRHm389bqe+yBbo; lc-main=en_US; i18n-prefs=USD; csm-hit=tb:VEXVVB8CM4BRPS90V52H+s-4A9M9F573TW3GHH27K5N|1626330696587&t:1626330696587&adb:adblk_no']
-    user_agent_list = ['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
-                       'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                       'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36']
+    def_cookie = 'session-id=141-0198602-5971905; session-id-time=2082787201l; skin=noskin; ubid-main=135-4979259-9456307; x-amz-captcha-1=1626333555817073; x-amz-captcha-2=Fh7ePzl89HNO2y/4YweOKg==; session-token=SHYIjafRjej7PZ0GTg1dQM8dpy3IFEKy557HttuHVB+xzjr++MlJRqZb4GuiRdafbt2+yRNEeYA7Ws9khV8jIRNo3bKw5JB9VuPyWhko/XtoVHk8J9Jdk66N364R1LgnwxrQxe9jqzXfRqRVqFsG2BuZzELbRkbfpe4a/FkKSEcocr+4MaRHm389bqe+yBbo; lc-main=en_US; i18n-prefs=USD; csm-hit=tb:VEXVVB8CM4BRPS90V52H+s-4A9M9F573TW3GHH27K5N|1626330696587&t:1626330696587&adb:adblk_no'
+    def_ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+    cookie_list = []
+    user_agent_list = []
     # 介词表
     preposition_word_list = ['at', 'in', 'on', 'to', 'above', 'over', 'below', 'under', 'beside', 'behind', 'between',
                              'in', 'on', 'at', 'after', 'from', 'behind', 'across', 'through', 'past', 'to',
@@ -52,12 +51,12 @@ class handle(object):
     # 自定义过滤关键词组
     var_word_group_list = []
 
-    # 亚马逊商品信息
-    goods_data_map = {}
     # 需要查询的类目链接
     goods_category_url_set = set()
     # 亚马逊标题关键词
     goods_data_key_map = {}
+    # 亚马逊商品信息 根据关键字分类
+    category_goods_data_map = {}
 
     # 爬取亚马逊信息
     def get_amazon_info(self, key, country):
@@ -70,6 +69,8 @@ class handle(object):
         driver.get(amazon_search_url)
         # 获取一下cookie
         self.get_amazon_cookies(driver)
+        # 获取一下ua
+        self.get_ie_ua(driver)
         # 切换邮编
         post_code_div_element = self.get_element_by_xpath_retry(driver, '//*[@id="nav-global-location-popover-link"]')
         post_code_div_element.click()
@@ -87,24 +88,30 @@ class handle(object):
         # 获取top100商品
         goods_url_set = set()
         goods_elements = self.get_elements_by_tag_class_retry(driver, 's-no-outline')
+        page = 2
         while len(goods_elements) > 0 and len(goods_url_set) < 100:
             for goods_element in goods_elements:
-                goods_url_set.add(goods_element.get_attribute('href'))
+                goods_url_set.add(goods_element.get_attribute('href') + '&language=en_US')
                 if len(goods_url_set) == 100:
                     break
             # 如果商品不足100个 则点击下一页
             if len(goods_url_set) < 100:
-                driver.execute_script('window.location.href="' + amazon_search_url + '?page=2"')
-                # self.click_element_by_xpath_retry(driver, '//*[@id="search"]/div[1]/div/div[1]/div/span[3]/div[2]/div[65]/span/div/div/ul/li[7]', 5)
+                driver.execute_script('window.location.href="' + amazon_search_url + '&page=' + str(page) + '"')
                 goods_elements = self.get_elements_by_tag_class_retry(driver, 's-no-outline')
+                page += 1
         # 关闭页面
         driver.close()
         # 爬取商品信息
         self.get_amazon_good_info_async(goods_url_set)
         # 根据类目获取各个类目下的top100商品
-        category_goods_url_set = self.get_goods_url_by_category()
+        category_goods_url_map = self.get_goods_url_by_category()
         # 爬取商品信息
-        self.get_amazon_good_info_async(category_goods_url_set)
+        index = 0
+        for category_url in category_goods_url_map:
+            print('共' + str(len(category_goods_url_map)) + '个商品类目 正在查询第' + str(index) + '个')
+            goods_data_map = self.get_amazon_good_info_async(category_goods_url_map[category_url])
+            self.category_goods_data_map[category_url] = goods_data_map
+            index += 1
 
     # 获取amazon cookie信息
     def get_amazon_cookies(self, driver):
@@ -113,52 +120,102 @@ class handle(object):
             cookies = ";".join([item['name'] + '=' + item['value'] for item in cookie_list])
             self.cookie_list.append(cookies)
 
-    # 根据商品标题获取关键字
+    # 获取浏览器ua
+    def get_ie_ua(self, driver):
+        ua = driver.execute_script("return navigator.userAgent")
+        self.user_agent_list.append(ua)
+
+    # 根据商品标题&五点获取关键字
     def get_amazon_key_word(self):
         # 打开分词网页
         driver = webdriver.Chrome(self.driver_path)
         driver.get(self.amazon_participle_url)
-        # 遍历map 查询关键词
+        # 同一个类目合并标题&五点
         index = 0
-        for url in self.goods_data_map:
-            print('共' + str(len(self.goods_data_map)) + '个关键词列表 正在查询第' + str(index) + '个')
-            goods_data = self.goods_data_map[url]
-            title = goods_data[0]
-            self.goods_data_key_map[url] = self.get_key_word(driver, title)
+        for category_url in self.category_goods_data_map:
+            print('共' + str(len(self.category_goods_data_map)) + '个关键词列表 正在查询第' + str(index) + '个')
+            title_list = []
+            five_detail_data_list = []
+            goods_data_map = self.category_goods_data_map[category_url]
+            for data_key in goods_data_map:
+                if len(goods_data_map[data_key]) > 2:
+                    title_list.append(goods_data_map[data_key][0])
+                    five_detail_data_list.append(goods_data_map[data_key][2])
+            # 查询关键字
+            title_key_word_list = []
+            five_detail_data_key_word_list = []
+            if len(title_list) > 0:
+                title_key_word_list = self.get_key_word(driver, ' '.join(title_list))
+            if len(five_detail_data_list) > 0:
+                five_detail_data_key_word_list = self.get_key_word(driver, ' '.join(five_detail_data_list))
+            self.goods_data_key_map[category_url] = [title_key_word_list, five_detail_data_key_word_list]
             index += 1
         # 关闭网页
         driver.close()
 
     # 导出csv文件
-    def export_csv(self, key):
-        path = self.code_path + str(time.time())
+    def export_keyword_csv(self, file_name):
+        path = self.code_path + '/' + str(time.time())
         # 创建文件夹
         folder = os.path.exists(path)
         if not folder:
             os.makedirs(path)
         # 写入csv文件
-        with open(path + '/' + key + '.csv', 'w', encoding='utf_8_sig') as csvfile:
+        with open(path + '/' + file_name + '.csv', 'w', encoding='utf_8_sig') as csvfile:
             writer = csv.writer(csvfile)
-            # 先写入columns_name
-            writer.writerow(['商品标题', '链接', '描述', '五点', '关键字列表(1个单词)', '关键字列表(2个单词)', '关键字列表(3个单词)'])
-            # 写入多行用writerows
-            for url in self.goods_data_map:
-                key_word_list = []
-                if url in self.goods_data_key_map:
-                    key_word_list = self.goods_data_key_map[url]
-                if len(key_word_list) < 3:
-                    print('关键字列表为空 ' +  url)
-                    continue
-                key_word_one = ''
-                key_word_two = ''
-                key_word_three = ''
-                if len(key_word_list[0]) > 0:
-                    key_word_one = ','.join('%s' %id for id in key_word_list[0])
-                if len(key_word_list[1]) > 0:
-                    key_word_two = ','.join('%s' %id for id in key_word_list[1])
-                if len(key_word_list[2]) > 0:
-                    key_word_three = ','.join('%s' %id for id in key_word_list[2])
-                writer.writerow([self.goods_data_map[url][0], url, self.goods_data_map[url][1], self.goods_data_map[url][2], key_word_one, key_word_two, key_word_three])
+            # 根据分类链接写入
+            for url in self.goods_data_key_map:
+                writer.writerow(['商品类目链接', url, '', '', '', '', ''])
+                writer.writerow(['标题关键字列表(1个单词)', '标题关键字列表(2个单词)', '标题关键字列表(3个单词)',
+                                 '五点关键字列表(1个单词)', '五点关键字列表(2个单词)', '五点关键字列表(3个单词)', ''])
+                title_key_word_list = self.goods_data_key_map[url][0]
+                five_detail_data_key_word_list = self.goods_data_key_map[url][1]
+                title_key_word_one_list = title_key_word_list[0]
+                title_key_word_two_list = title_key_word_list[1]
+                title_key_word_three_list = title_key_word_list[2]
+                five_detail_data_key_word_one_list = five_detail_data_key_word_list[0]
+                five_detail_data_key_word_two_list = five_detail_data_key_word_list[1]
+                five_detail_data_key_word_three_list = five_detail_data_key_word_list[2]
+                index = 0
+                while 1:
+                    need_break = True
+                    key_word_rows = []
+                    if index < len(title_key_word_one_list):
+                        key_word_rows.append(title_key_word_one_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    if index < len(title_key_word_two_list):
+                        key_word_rows.append(title_key_word_two_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    if index < len(title_key_word_three_list):
+                        key_word_rows.append(title_key_word_three_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    if index < len(five_detail_data_key_word_one_list):
+                        key_word_rows.append(five_detail_data_key_word_one_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    if index < len(five_detail_data_key_word_two_list):
+                        key_word_rows.append(five_detail_data_key_word_two_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    if index < len(five_detail_data_key_word_three_list):
+                        key_word_rows.append(five_detail_data_key_word_three_list[index])
+                        need_break = False
+                    else:
+                        key_word_rows.append('')
+                    key_word_rows.append('')
+                    writer.writerow(key_word_rows)
+                    index += 1
+                    if need_break:
+                        break
+
 
     # 下载最终excel 异步执行
     def download_excel_async(self, goods_data_key_map, url_three_cookie, country):
@@ -205,6 +262,16 @@ class handle(object):
             try:
                 element = driver.find_element_by_xpath(xpath)
                 return element
+            except:
+                print('页面未加载完成 等待')
+                time.sleep(0.1)
+
+    # 根据xpath不断尝试获取元素 阻塞
+    def get_elements_by_xpath_retry(self, driver, xpath):
+        for i in range(1000000):
+            try:
+                elements = driver.find_elements_by_xpath(xpath)
+                return elements
             except:
                 print('页面未加载完成 等待')
                 time.sleep(0.1)
@@ -277,10 +344,15 @@ class handle(object):
         # 清空文本
         textarea_element.clear()
         # 输入文本
-        find_str = find_str.replace('\'', '\\\'').replace('"', '\\"')
+        # 处理特殊字符
+        find_str = find_str.replace('\'', '\\\'').replace('"', '\\"').replace('&', '\\&')\
+            .replace('\\n', '\\\\n').replace('\\r', '\\\\r').replace('\\t', '\\\\t').replace('\\b', '\\\\b').replace('\\f', '\\\\f')
         js = 'document.getElementById(\'textbox\').value=\'' + find_str + '\''
         print(js)
-        driver.execute_script(js)
+        try:
+            driver.execute_script(js)
+        except:
+            textarea_element.send_keys(find_str)
         textarea_element.click()
         # 切换关键字个数
         click_element = driver.find_element_by_xpath('//*[@id="ui-id-' + str(num) + '"]')
@@ -385,7 +457,7 @@ class handle(object):
 
     # 获取亚马逊商品类目信息
     def get_goods_url_by_category(self):
-        goods_url_set = set()
+        category_goods_url_map = {}
         index = 0
         for category_url in self.goods_category_url_set:
             print('共' + str(len(self.goods_category_url_set)) + '个类目 当前第' + str(index) + '个')
@@ -395,25 +467,28 @@ class handle(object):
             driver.get(category_url)
             # 获取一下cookie
             self.get_amazon_cookies(driver)
-            goods_elements = self.get_elements_by_tag_class_retry(driver, 'a-link-normal')
-            while len(goods_elements) > 0 and len(category_goods_url_set) < 100:
+            goods_elements = self.get_elements_by_tag_class_retry(driver, 'a-text-normal')
+            last_size = -1
+            while len(goods_elements) > 0 and len(category_goods_url_set) < 100 and last_size != len(category_goods_url_set):
+                last_size = len(category_goods_url_set)
                 for goods_element in goods_elements:
-                    category_goods_url_set.add(goods_element.get_attribute('href'))
+                    category_goods_url_set.add(goods_element.get_attribute('href') + '&language=en_US')
                     if len(category_goods_url_set) == 100:
                         break
                 # 如果商品不足100个 则点击下一页
                 if len(category_goods_url_set) < 100:
                     self.click_element_by_xpath_retry(driver, '//*[@id="zg-center-div"]/div[2]/div/ul/li[4]', 5)
-                    goods_elements = self.get_elements_by_tag_class_retry(driver, 'a-link-normal')
-            for u in category_goods_url_set:
-                goods_url_set.add(u)
+                    goods_elements = self.get_elements_by_tag_class_retry(driver, 'a-text-normal')
+            category_goods_url_map[category_url] = category_goods_url_set
             index += 1
             # 关闭页面
             driver.close()
-        return goods_url_set
+        return category_goods_url_map
 
     # 获取亚马逊商品信息 异步执行
     def get_amazon_good_info_async(self, urls):
+        # 商品信息
+        goods_data_map = {}
         thread_map = {}
         thread_key_list = []
         fail_url_list = []
@@ -432,7 +507,7 @@ class handle(object):
                     t.join()
                     res_data = t.get_result()
                     if len(res_data) == 2:
-                        self.goods_data_map[res_data[0]] = res_data[1]
+                        goods_data_map[res_data[0]] = res_data[1]
                     else:
                         fail_url_list.append(key)
                 thread_key_list = []
@@ -441,21 +516,20 @@ class handle(object):
             t.join()
             res_data = t.get_result()
             if len(res_data) == 2:
-                self.goods_data_map[res_data[0]] = res_data[1]
+                goods_data_map[res_data[0]] = res_data[1]
             else:
                 fail_url_list.append(key)
         print('共' + str(len(fail_url_list)) + '个失败页面')
         for fail_url in fail_url_list:
             print(fail_url)
-        # 尽最大可能成功 失败url使用selenium重试 todo
-        """
+        # 尽最大可能成功 失败url使用selenium重试
         fail_thread_map = {}
         fail_thread_key_list = []
         index = 0
         for fail_url in fail_url_list:
-            fail_thread = amazon_goods_thread_selenium('共' + str(len(urls)) + '个失败重试页面 正在解析第' + str(index) + '个页面', fail_url, self)
+            fail_thread = amazon_goods_thread_selenium('共' + str(len(fail_url_list)) + '个失败重试页面 正在解析第' + str(index) + '个页面', fail_url, self)
             fail_thread.start()
-            fail_thread_map[url] = fail_thread
+            fail_thread_map[fail_url] = fail_thread
             fail_thread_key_list.append(fail_url)
             time.sleep(0.5)
             index += 1
@@ -466,7 +540,7 @@ class handle(object):
                     t.join()
                     res_data = t.get_result()
                     if len(res_data) == 2:
-                        self.goods_data_map[res_data[0]] = res_data[1]
+                        goods_data_map[res_data[0]] = res_data[1]
                     else:
                         print('获取商品信息失败 ' + key)
                 fail_thread_key_list = []
@@ -475,13 +549,23 @@ class handle(object):
             t.join()
             res_data = t.get_result()
             if len(res_data) == 2:
-                self.goods_data_map[res_data[0]] = res_data[1]
+                goods_data_map[res_data[0]] = res_data[1]
             else:
                 print('获取商品信息失败 ' + key)
-        """
+        return goods_data_map
 
     # 获取亚马逊商品信息
     def get_amazon_good_info(self, url):
+        cookie = ''
+        if len(self.cookie_list) == 0:
+            cookie = self.def_cookie
+        else:
+            cookie = random.choice(self.cookie_list)
+        ua = ''
+        if len(self.user_agent_list) == 0:
+            ua = self.def_ua
+        else:
+            ua = self.user_agent_list[0]
         headers = {
             'authority': 'www.amazon.com',
             'cache-control': 'max-age=0',
@@ -491,17 +575,20 @@ class handle(object):
             'sec-ch-ua': '" Not;A Brand";v="99", "Google Chrome";v="91", "Chromium";v="91"',
             'sec-ch-ua-mobile': '?0',
             'upgrade-insecure-requests': '1',
-            'user-agent': random.choice(self.user_agent_list),
+            'user-agent': ua,
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
             'sec-fetch-site': 'none',
             'sec-fetch-mode': 'navigate',
             'sec-fetch-user': '?1',
             'sec-fetch-dest': 'document',
             'accept-language': 'zh-CN,zh;q=0.9',
-            'cookie': random.choice(self.cookie_list)
+            'cookie': cookie
         }
         url += '&language=en_US'
-        resp = requests.get(url, headers=headers)
+        try:
+            resp = requests.get(url, headers=headers)
+        except:
+            return []
         html = etree.HTML(resp.text)
         # 获取标题
         title_data = ''
@@ -514,8 +601,10 @@ class handle(object):
             else:
                 # 重试
                 headers['cookie'] = random.choice(self.cookie_list)
-                headers['user-agent'] = random.choice(self.user_agent_list)
-                resp = requests.get(url, headers=headers)
+                try:
+                    resp = requests.get(url, headers=headers)
+                except:
+                    return []
                 html = etree.HTML(resp.text)
             retry -= 1
         if title_data == '':
@@ -559,19 +648,39 @@ class handle(object):
         driver.get(url)
         # 获取标题
         title_data = ''
-
-        # 获取描述
-        detail_data = ''
-
+        title_element = self.get_element_by_xpath_retry(driver, '//*[@id="productTitle"]')
+        title_data = title_element.text
         # 获取五点
         five_detail_data = []
-
+        i = 3
+        five_detail_data_xpath = '//*[@id="feature-bullets"]/ul/li[2]/span'
+        while self.element_exist_by_xpath_retry(driver, five_detail_data_xpath, 20):
+            five_detail_data_element = self.get_element_by_xpath_retry(driver, five_detail_data_xpath)
+            five_detail_data.append(five_detail_data_element.text.replace('\n', ''))
+            five_detail_data_xpath = '//*[@id="feature-bullets"]/ul/li[' + str(i) + ']/span'
+            i += 1
+        # 获取描述
+        detail_data = ''
+        if self.element_exist_by_xpath_retry(driver, '//*[@id="productDescription"]/p', 5):
+            detail_data_elements = self.get_elements_by_xpath_retry(driver, '//*[@id="productDescription"]/p')
+            for detail_data_element in detail_data_elements:
+                if detail_data_element.text is not None:
+                    detail_data += detail_data_element.text.replace('\n', '')
         # 查询商品类目链接
         category_url = ''
-        # category_url = 'https://www.amazon.com' + category_url_html[0] + '?language=en_US'
-        # 去除中文
-        category_url = category_url.replace('-/zh/', '')
-        self.goods_category_url_set.add(category_url)
+        url_span_index = 1
+        category_url_xpath = '//*[@class="a-color-secondary a-size-base prodDetSectionEntry"]/../td/span/span[' + str(url_span_index) + ']/a'
+        category_url_xpath_last = ''
+        while self.element_exist_by_xpath_retry(driver, category_url_xpath, 5):
+            category_url_xpath_last = category_url_xpath
+            url_span_index += 1
+            category_url_xpath = '//*[@class="a-color-secondary a-size-base prodDetSectionEntry"]/../td/span/span[' + str( url_span_index) + ']/a'
+        if self.element_exist_by_xpath_retry(driver, category_url_xpath_last, 1):
+            category_url_element = self.get_element_by_xpath_retry(driver, category_url_xpath_last)
+            category_url = category_url_element.get_attribute('href') + '?language=en_US'
+            # 去除中文
+            category_url = category_url.replace('-/zh/', '')
+            self.goods_category_url_set.add(category_url)
         driver.close()
         data = [title_data, detail_data, ','.join(five_detail_data), category_url]
         return [url, data]
@@ -628,12 +737,12 @@ class amazon_excel_thread(threading.Thread):
         print ("结束线程: " + self.thread_name)
 
 # 关键字
-key = 'armchairs'
+key = 'record weight'
 # 国家
 country = 0
 s = handle()
 s.get_amazon_info(key, country)
 s.get_amazon_key_word()
-s.export_csv(key)
+s.export_keyword_csv(key)
 
-# s.get_amazon_good_info_selenium('https://www.amazon.com/Artechworks-Modern-Armchair-Bedroom-Channel/dp/B082KNVZYB/ref=sxin_11_pa_sp_search_thematic_sspa?cv_ct_cx=armchairs&dchild=1&keywords=armchairs&pd_rd_i=B082KNVZYB&pd_rd_r=2a059f92-b4da-4b41-901f-8be8e401ff20&pd_rd_w=rbxuw&pd_rd_wg=nsBZD&pf_rd_p=beb60826-022b-4649-9443-7feace17b79e&pf_rd_r=13BMZ6MZM4M8J344Z6J0&qid=1626281170&refresh=1&sr=1-1-a73d1c8c-2fd2-4f19-aa41-2df022bcb241-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExS1VZQjRSVTVFNDFBJmVuY3J5cHRlZElkPUEwOTk2NjkwMkJQMTQ0UEZGVjNZViZlbmNyeXB0ZWRBZElkPUEwNjEyMTE3NVY4VktMUkMxRVo3JndpZGdldE5hbWU9c3Bfc2VhcmNoX3RoZW1hdGljJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==')
+# s.get_amazon_good_info_selenium('https://www.amz123.com/tools-wordcounter')
