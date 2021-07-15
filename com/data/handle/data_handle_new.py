@@ -49,7 +49,7 @@ class handle(object):
     # 自定义过滤关键字
     var_word_list = []
     # 自定义过滤关键词组
-    var_word_group_list = []
+    var_word_group_list = ['and a']
 
     # 需要查询的类目链接
     goods_category_url_set = set()
@@ -57,6 +57,17 @@ class handle(object):
     goods_data_key_map = {}
     # 亚马逊商品信息 根据关键字分类
     category_goods_data_map = {}
+
+    # csv文件夹路径
+    path = ''
+
+    def __init__(self, package_name):
+        # 创建一个文件夹用于存放csv
+        self.path = self.code_path + '/' + package_name
+        # 创建文件夹
+        folder = os.path.exists(self.path)
+        if not folder:
+            os.makedirs(self.path)
 
     # 爬取亚马逊信息
     def get_amazon_info(self, key, country):
@@ -103,6 +114,9 @@ class handle(object):
         driver.close()
         # 爬取商品信息
         self.get_amazon_good_info_async(goods_url_set)
+        # tmp = set()
+        # tmp.add('https://www.amazon.com/Profile-Record-Stabilizer-Turntable-Clamps-Fits/dp/B07PX1Y8MH/ref=sr_1_4?dchild=1&keywords=record+weight&qid=1626356621&refresh=1&sr=8-4&language=en_US')
+        # self.get_amazon_good_info_async(tmp)
         # 根据类目获取各个类目下的top100商品
         category_goods_url_map = self.get_goods_url_by_category()
         # 爬取商品信息
@@ -153,15 +167,32 @@ class handle(object):
         # 关闭网页
         driver.close()
 
-    # 导出csv文件
-    def export_keyword_csv(self, file_name):
+    # 创建文件夹
+    def create_package(self, file_name):
         path = self.code_path + '/' + str(time.time())
         # 创建文件夹
         folder = os.path.exists(path)
         if not folder:
             os.makedirs(path)
+        return path
+
+    # 导出商品信息csv文件
+    def export_goods_csv(self, file_name):
         # 写入csv文件
-        with open(path + '/' + file_name + '.csv', 'w', encoding='utf_8_sig') as csvfile:
+        with open(self.path + '/' + file_name + '.csv', 'w', encoding='utf_8_sig') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['商品title', '商品链接', '商品描述', '商品五点', '商品类目'])
+            for category_url in self.category_goods_data_map:
+                goods_data_map = self.category_goods_data_map[category_url]
+                for url in goods_data_map:
+                    goods_data = goods_data_map[url]
+                    if len(goods_data) == 4:
+                        writer.writerow([goods_data[0], url, goods_data[1], goods_data[2], goods_data[3]])
+
+    # 导出关键字csv文件
+    def export_keyword_csv(self, file_name):
+        # 写入csv文件
+        with open(self.path + '/' + file_name + '.csv', 'w', encoding='utf_8_sig') as csvfile:
             writer = csv.writer(csvfile)
             # 根据分类链接写入
             for url in self.goods_data_key_map:
@@ -369,11 +400,13 @@ class handle(object):
                 td_elements = tr.find_elements_by_tag_name('td')
                 if len(td_elements) == 2:
                     td_text = td_elements[0].text
+                    td_number_text = td_elements[1].text
+                    # td_percentage_text = td_elements[1].find_element_by_tag_name('span').text
                     if td_text is not None and len(td_text.split('. ')) == 2:
                         # 判断是否为数字或单个字母或介词
                         td_str = td_text.split('. ')[1]
                         if self.check_key_word(td_str):
-                            data.append(td_str)
+                            data.append(td_str + ' | ' + td_number_text)
                         else:
                             print('过滤关键字 ' + td_str)
         return data
@@ -736,13 +769,16 @@ class amazon_excel_thread(threading.Thread):
         self.thread_object.download_excel(self.file_path, self.cookie, self.keys, self.country)
         print ("结束线程: " + self.thread_name)
 
+# 生成csv文件夹名称
+package_name = 'record weight'
 # 关键字
 key = 'record weight'
 # 国家
 country = 0
-s = handle()
+s = handle(package_name)
 s.get_amazon_info(key, country)
 s.get_amazon_key_word()
-s.export_keyword_csv(key)
+s.export_goods_csv(key + '_商品信息')
+s.export_keyword_csv(key + '_关键字信息')
 
 # s.get_amazon_good_info_selenium('https://www.amz123.com/tools-wordcounter')
