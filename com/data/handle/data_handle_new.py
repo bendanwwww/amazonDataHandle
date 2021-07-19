@@ -32,6 +32,7 @@ class handle(object):
     def_ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
     cookie_list = []
     user_agent_list = []
+
     # 介词表
     preposition_word_list = ['at', 'in', 'on', 'to', 'above', 'over', 'below', 'under', 'beside', 'behind', 'between',
                              'in', 'on', 'at', 'after', 'from', 'behind', 'across', 'through', 'past', 'to',
@@ -129,15 +130,21 @@ class handle(object):
 
     # 获取amazon cookie信息
     def get_amazon_cookies(self, driver):
-        cookie_list = driver.get_cookies()
-        if cookie_list is not None and len(cookie_list) > 0:
-            cookies = ";".join([item['name'] + '=' + item['value'] for item in cookie_list])
-            self.cookie_list.append(cookies)
+        try:
+            cookie_list = driver.get_cookies()
+            if cookie_list is not None and len(cookie_list) > 0:
+                cookies = ";".join([item['name'] + '=' + item['value'] for item in cookie_list])
+                self.cookie_list.append(cookies)
+        except:
+            print('获取网页cookie失败')
 
     # 获取浏览器ua
     def get_ie_ua(self, driver):
-        ua = driver.execute_script("return navigator.userAgent")
-        self.user_agent_list.append(ua)
+        try:
+            ua = driver.execute_script("return navigator.userAgent")
+            self.user_agent_list.append(ua)
+        except:
+            print('获取浏览器ua失败')
 
     # 根据商品标题&五点获取关键字
     def get_amazon_key_word(self):
@@ -286,7 +293,7 @@ class handle(object):
             except:
                 print("页面未加载完成 等待")
                 time.sleep(0.1)
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 150 == 0:
                 driver.refresh()
 
     # 根据xpath不断尝试获取元素 阻塞
@@ -298,7 +305,7 @@ class handle(object):
             except:
                 print('页面未加载完成 等待')
                 time.sleep(0.1)
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 150 == 0:
                 driver.refresh()
 
     # 根据xpath不断尝试获取元素 阻塞
@@ -310,7 +317,7 @@ class handle(object):
             except:
                 print('页面未加载完成 等待')
                 time.sleep(0.1)
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 150 == 0:
                 driver.refresh()
 
     # 根据xpath判断元素是否存在 重试
@@ -781,7 +788,7 @@ package_name = 'record weight'
 # 关键字
 key = 'record weight'
 # 国家
-country = 1
+country = 0
 s = handle(package_name)
 s.get_amazon_info(key, country)
 s.get_amazon_key_word()
