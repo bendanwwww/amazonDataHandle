@@ -32,7 +32,7 @@ def get_code(url, city, country):
     html_text = resp
     html = etree.HTML(html_text)
     for i in range(1, 100):
-        code_tr = html.xpath('/html/body/div[2]/div/div[2]/div[2]/div[3]/div/table/tbody/tr['+ str(i) +']')
+        code_tr = html.xpath('/html/body/div[2]/div/div[2]/div[4]/div[3]/div/table/tbody/tr['+ str(i) +']')
         if len(code_tr) > 0:
             city_td_text = code_tr[0][1].text
             if city_td_text.lower() == city.lower():
@@ -40,7 +40,7 @@ def get_code(url, city, country):
         else:
             break
     if country == 'FR':
-        code_tr = html.xpath('/html/body/div[2]/div/div[2]/div[2]/div[3]/div/table/tbody/tr[1]')
+        code_tr = html.xpath('/html/body/div[2]/div/div[2]/div[4]/div[3]/div/table/tbody/tr[1]')
         if len(code_tr) > 0:
             return [code_tr[0][2].text, code_tr[0][1].text]
         else:
