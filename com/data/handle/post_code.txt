@@ -1,7 +1,3 @@
-DE		Neustadt	35279
-DE	Nordrhein-Westfalen	Dortmund	44263
-IT	Emilia-Romagna	Sassuolo	41049
-IT	Liguria	Dego	17058
-IT	Piemonte	Rivalta Di Torino	10040
-DE	Sachsen-Anhalt	Weißandt-Gölzau	06369
-IT	Campania	Bagnoli Irpino	83043
+IT		Bari	70131
+ES	Madrid	Madrid	28001
+IT	Lazio	Aprilia	04011

@@ -50,7 +50,10 @@ def get_code(url, city, country):
 
 xlsx_to_csv()
 ret = read_file(code_path + '/post_code.csv').split('\n')
-url_map = {"DE": "https://www.nowmsg.com/findzip/de_postalcode.asp?CityName=", "IT": "https://www.nowmsg.com/findzip/it_postal_code.asp?CityName=", "FR": "https://www.nowmsg.com/findzip/fr_postal_code.asp?CityName="}
+url_map = {"DE": "https://www.nowmsg.com/findzip/de_postalcode.asp?CityName=",
+           "IT": "https://www.nowmsg.com/findzip/it_postal_code.asp?CityName=",
+           "FR": "https://www.nowmsg.com/findzip/fr_postal_code.asp?CityName=",
+           "ES": "https://www.nowmsg.com/findzip/es_postal_code.asp?CityName="}
 
 res_data = []
 index = 0

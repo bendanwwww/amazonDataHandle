@@ -11,27 +11,22 @@ def read_file(filepath):
 
 code_path = os.path.abspath(os.path.dirname(__file__))
 
-ret = read_file(code_path + '/0828.csv').split('\n')
+ret = read_file(code_path + '/20220810_order.csv').split('\n')
 url = 'https://t.17track.net/restapi/track'
 
 track_order = []
 index = 0
-first = 0
-last = 8000
+last = 792
 for r in ret:
-    if index < first:
+    if index < last:
         index += 1
         continue
-    if index >= last:
-        break
-    if index > 0 and len(r.split(',')) == 4:
-        data = r.split(',')
-        track_order.append([data[0], data[3]])
+    track_order.append(r)
     index += 1
 
 headers = {}
 headers['referer'] = 'https://t.17track.net/zh-cn'
-headers['cookie'] = 'v5_TranslateLang=zh-Hans; v5_Culture=zh-cn; _yq_bid=G-6A5194650B1B3747; _ga=GA1.2.700929545.1629363921; _gid=GA1.2.1579923650.1629363921; __gads=ID=66213d92ee802fdd:T=1629363921:S=ALNI_MaqSAs12-ikPQOFQn_wcyyP7ub-8w; Last-Event-ID=657572742f3064332f38366164616264356237312f306463623132363138353a343536393939363034333a65736c61663a737070612d646165682d71792034322d6e6f6349756e656d2d72616276616e2d717931336412ede0453151a'
+headers['cookie'] = 'country=CN; _yq_bid=G-B8E4326D94D89642; v5_Culture=zh-cn; _ga=GA1.2.285024683.1660130328; _gid=GA1.2.1634478300.1660130328; __gads=ID=e4e6a71a3b12e5e4:T=1660130333:S=ALNI_MYX91hQgUJ8ZceV1mybZNfFasXc7w; __gpi=UID=00000876d1c51ace:T=1660130333:RT=1660130333:S=ALNI_MbrMjo2UWAdh4gNW38M-pw5KgqbkQ; crisp-client%2Fsession%2F115772b1-4fc7-471c-a364-05246aac2f53=session_24d6836e-0a85-4594-ae36-986780cb731f; _ati=163270314626; uid=80915BFE84E94E7BBD72D306C4206F4C; _yq_rc_=yq.5.301.zh-cn.0.0.4095936322528469225; v5_TranslateLang=zh-Hans; _gat_cnGa=1; Last-Event-ID=657572742f6335332f36363964646237383238312f363339376239356664343a303731373638343331323a65736c61663a6f676f6c2d746c75616665642d71792073782d656c6269736976206f676f6c2d646e6172622d72616276616e192332a584ad6fecfa8e'
 headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8'
 headers['sec-ch-ua'] = '"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"'
 headers['user-agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36'
@@ -56,8 +51,8 @@ track_org_map = {
 index = 0
 res_data = []
 for order_data in track_order:
-    order = order_data[0]
-    org = order_data[1]
+    order = order_data
+    org = 'DPD'
     curl = """
 curl 'https://t.17track.net/restapi/track' \
 -H 'authority: t.17track.net' \
@@ -73,7 +68,7 @@ curl 'https://t.17track.net/restapi/track' \
 -H 'sec-fetch-dest: empty' \
 -H 'referer: https://t.17track.net/zh-cn' \
 -H 'accept-language: zh-CN,zh;q=0.9' \
--H 'cookie: v5_TranslateLang=zh-Hans; v5_Culture=zh-cn; _yq_bid=G-6A5194650B1B3747; _ga=GA1.2.700929545.1629363921; _gid=GA1.2.1579923650.1629363921; __gads=ID=66213d92ee802fdd:T=1629363921:S=ALNI_MaqSAs12-ikPQOFQn_wcyyP7ub-8w; v5_HisExpress=07041; Last-Event-ID=657572742f3739332f33383834383632366237312f386430393736656137623a343536393939363034333a65736c61663a7261626c6f6f742d72616276616e2d71792074686769722d7261626c6f6f742d72616276616e2074686769722d72616276616e207261626c6f6f742d72616276616e2076616e113706d4d6918044dc8' \
+-H 'cookie: country=CN; _yq_bid=G-B8E4326D94D89642; v5_Culture=zh-cn; _ga=GA1.2.285024683.1660130328; _gid=GA1.2.1634478300.1660130328; __gads=ID=e4e6a71a3b12e5e4:T=1660130333:S=ALNI_MYX91hQgUJ8ZceV1mybZNfFasXc7w; __gpi=UID=00000876d1c51ace:T=1660130333:RT=1660130333:S=ALNI_MbrMjo2UWAdh4gNW38M-pw5KgqbkQ; crisp-client/session/115772b1-4fc7-471c-a364-05246aac2f53=session_24d6836e-0a85-4594-ae36-986780cb731f; _ati=163270314626; uid=80915BFE84E94E7BBD72D306C4206F4C; _yq_rc_=yq.5.301.zh-cn.0.0.4095936322528469225; v5_TranslateLang=zh-Hans; v5_HisExpress=100007; Last-Event-ID=657572742f6435332f64663935336437383238312f343966393038383031633a303731373638343331323a65736c61663a6c742d696e612d7179207466656c2d756e656d2d6e776f64706f726420756e656d2d6e776f64706f72642223132eda1909c9f86e' \
 --data-raw '{\"data\": [{\"num\": \"""" + order + """\",\"fc\": """+ str(track_org_map[org]) +""",\"sc\": 0}],\"guid\": \"\",\"timeZoneOffset\": -480}' \
 --compressed
 """
@@ -84,7 +79,7 @@ curl 'https://t.17track.net/restapi/track' \
     except Exception as e:
         print(e)
         continue
-    time.sleep(1)
+    time.sleep(2)
     curl = """
 curl 'https://t.17track.net/restapi/track' \
 -H 'authority: t.17track.net' \
@@ -100,29 +95,52 @@ curl 'https://t.17track.net/restapi/track' \
 -H 'sec-fetch-dest: empty' \
 -H 'referer: https://t.17track.net/zh-cn' \
 -H 'accept-language: zh-CN,zh;q=0.9' \
--H 'cookie: v5_TranslateLang=zh-Hans; v5_Culture=zh-cn; _yq_bid=G-6A5194650B1B3747; _ga=GA1.2.700929545.1629363921; _gid=GA1.2.1579923650.1629363921; __gads=ID=66213d92ee802fdd:T=1629363921:S=ALNI_MaqSAs12-ikPQOFQn_wcyyP7ub-8w; v5_HisExpress=07041; Last-Event-ID=657572742f3739332f33383834383632366237312f386430393736656137623a343536393939363034333a65736c61663a7261626c6f6f742d72616276616e2d71792074686769722d7261626c6f6f742d72616276616e2074686769722d72616276616e207261626c6f6f742d72616276616e2076616e113706d4d6918044dc8' \
+-H 'cookie: country=CN; _yq_bid=G-B8E4326D94D89642; v5_Culture=zh-cn; _ga=GA1.2.285024683.1660130328; _gid=GA1.2.1634478300.1660130328; __gads=ID=e4e6a71a3b12e5e4:T=1660130333:S=ALNI_MYX91hQgUJ8ZceV1mybZNfFasXc7w; __gpi=UID=00000876d1c51ace:T=1660130333:RT=1660130333:S=ALNI_MbrMjo2UWAdh4gNW38M-pw5KgqbkQ; crisp-client/session/115772b1-4fc7-471c-a364-05246aac2f53=session_24d6836e-0a85-4594-ae36-986780cb731f; _ati=163270314626; uid=80915BFE84E94E7BBD72D306C4206F4C; _yq_rc_=yq.5.301.zh-cn.0.0.4095936322528469225; v5_TranslateLang=zh-Hans; v5_HisExpress=100007; Last-Event-ID=657572742f6435332f64663935336437383238312f343966393038383031633a303731373638343331323a65736c61663a6c742d696e612d7179207466656c2d756e656d2d6e776f64706f726420756e656d2d6e776f64706f72642223132eda1909c9f86e' \
 --data-raw '{\"data\": [{\"num\": \"""" + order + """\",\"fc\": """+ str(track_org_map[org]) +""",\"sc\": 0}],\"guid\": \""""+ guid +"""\",\"timeZoneOffset\": -480}' \
 --compressed
 """
     res = json.loads(os.popen(curl).readlines()[0])
     try:
+        # 订单状态
         track_status_type = res['dat'][0]['track']['e']
         track_status = track_status_map[str(track_status_type)]
-        track_time = res['dat'][0]['track']['z0']['a']
-        track_time_str = ''
-        timeArray = time.strptime(track_time, "%Y-%m-%d %H:%M")
-        timeStamp = int(time.mktime(timeArray))
-        if int(track_status_type) < 35 and int(time.time()) - timeStamp > 3 * 24 * 60 * 60:
-            track_time_str = '超过' + str(int((int(time.time()) - timeStamp) / (24 * 60 * 60))) + '天 最后更新时间 ' + track_time
-        res_data.append([str(order).replace(' ', ''), str(track_status).replace(' ', ''), track_time_str, org.replace(' ', '')])
+        # 订单节点时间
+        track_time_list = res['dat'][0]['track']['z1']
+        track_time_timestamp_list = []
+        for track_time in track_time_list:
+            timeArray = time.strptime(track_time['a'], "%Y-%m-%d %H:%M")
+            timeStamp = int(time.mktime(timeArray))
+            track_time_timestamp_list.append(timeStamp)
+        # 判断时间
+        # 若只有一个节点
+        if len(track_time_timestamp_list) == 1 and track_status_type != 40:
+            if int(time.time()) - timeStamp > 3 * 24 * 60 * 60:
+                res_data.append([str(order).replace(' ', ''), str(track_status).replace(' ', ''), '只有一个物流节点且未完成配送'])
+        # 若有多个节点
+        if len(track_time_timestamp_list) > 1:
+            # 判断是否有节点相隔超过7天
+            is_set = False
+            for i in range(1, len(track_time_timestamp_list)):
+                if track_time_timestamp_list[i - 1] - track_time_timestamp_list[i] > 7 * 24 * 60 * 60:
+                    res_data.append([str(order).replace(' ', ''), str(track_status).replace(' ', ''), '有相邻两个物流节点间隔时间超过7天'])
+                    is_set = True
+                    break
+            # 判断最近时间节点据今是否超过7天且为非异常状态
+            if not is_set and track_status_type != 40 and int(time.time()) - track_time_timestamp_list[len(track_time_timestamp_list) - 1] > 7 * 24 * 60 * 60:
+                res_data.append([str(order).replace(' ', ''), str(track_status).replace(' ', ''), '物流节点近7天未更新且为未送达状态'])
+        #
+        # if int(track_status_type) < 35 and int(time.time()) - timeStamp > 3 * 24 * 60 * 60:
+        #     track_time_str = '超过' + str(int((int(time.time()) - timeStamp) / (24 * 60 * 60))) + '天 最后更新时间 ' + track_time
+        # res_data.append([str(order).replace(' ', ''), str(track_status).replace(' ', ''), track_time_str, org.replace(' ', '')])
     except Exception as e:
+        print(res_data)
         print(e)
-        res_data.append([str(order).replace(' ', ''), '', '', org.replace(' ', '')])
+        # res_data.append([str(order).replace(' ', ''), '', '', org.replace(' ', '')])
     print(index)
     index += 1
 
-filename = code_path + '/track_order_0828.txt'
+filename = code_path + '/track_order_20220810.txt'
 with open(filename, 'w') as file_object:
     for d in res_data:
-        file_object.write(d[0] + '\t' + d[1] + '\t' + d[2] + '\t' + d[3] + '\n')
+        file_object.write(d[0] + '\t' + d[1] + '\t' + d[2] + '\n')
 
